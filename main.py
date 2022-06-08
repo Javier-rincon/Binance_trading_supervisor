@@ -22,7 +22,7 @@ class VentanaPrincipal (QtWidgets.QMainWindow, Ui_MainWindow):
         websocket_manager.stop_manager_with_all_streams()       
         worker.terminate()
         
-'''=========================Acceso a data================================'''
+'''======================+++===Acceso a data================================'''
 
 class WorkerThread (QThread):
     def run (self):
