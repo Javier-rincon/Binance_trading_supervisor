@@ -22,7 +22,7 @@ class VentanaPrincipal (QtWidgets.QMainWindow, Ui_MainWindow):
         websocket_manager.stop_manager_with_all_streams()       
         worker.terminate()
         
-'''======================+++===Acceso a data================================'''
+'''=======================Acceso a data================================'''
 
 class WorkerThread (QThread):
     def run (self):
@@ -150,7 +150,7 @@ if privateconfig.url == "https://fapi.binance.com":#por seguridad, luego borrar
     ventana.pushButton_operation.setEnabled(False)
     ventana.setStyleSheet("background-color: rgb(250, 160, 114);")
 
-"""======================esto siempre al final============================"""
+"""======================esto siempre al final=========================="""
 if __name__ == "__main__": 
     app = QtWidgets.QApplication([]) 
     ventana.show() 
