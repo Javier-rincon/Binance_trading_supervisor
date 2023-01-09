@@ -5,7 +5,7 @@ Created on Thu May  6 09:41:23 2021
 @author: Metsis-white
 """
 import websocket, json, datetime
-import Herramientas, api_bridge, manage_orders
+import Herramientas, api_bridge
 import variables as var
 import os
     
@@ -37,17 +37,24 @@ def incoming_data(message):
     
     if event_type == 'listenKeyExpired':
         return ['None','None'] 
+    
+    if event_type == 'ACCOUNT_UPDATE':
+        return ['None','None'] 
 
     if event_type =='ORDER_TRADE_UPDATE':
+        print("------------FILLED--------------------", message, '---------------------')
         save_stream_on_txt('ORDER_TRADE_UPDATE.txt',message)#provisional
         
         if message['o']['x']=="NEW":
             if message['o']['c'][-3]!='-':
                 save_order(message)
             
-        elif message['o']['x']=="FILLED":
+        elif message['o']['X']=="FILLED":
+            
             if message['o']['c'][-3]!='-':
                 info= read_order(message['o']['c'])
+                print("------------reading--------------------", info, '---------------------')
+
                 api_bridge.setup_tp_sl(info['symbol'], info['side'], 
                                        info['quantity'], info['client_id'], 
                                        info['tp'], info['sl'])
@@ -55,6 +62,7 @@ def incoming_data(message):
         return ['ORDER_TRADE_UPDATE','None']
     
     #pendiente al agregar mas streams, todos tienen que tener 'symbol en message['s']
+    #print('oooooooooooooooooooooooooo',message,'oooooooooooooooooooooooooo'
     _symbol =  message['s']
     if  _symbol != var.symbol :
         return ['None','None']  
@@ -74,7 +82,7 @@ def incoming_data(message):
             return process_kline(message)
         return ['None','None'] #ya que la vela no ha cerrado se manda None para que sea ignorado
     else:
-        print('+++++++++++++++++++',message,'++++++++++++++++++++++++')
+        #print('+++++++++++++++++++',message,'++++++++++++++++++++++++')
         save_stream_on_txt('fails_streams.txt',message)
         return ['None','None'] # no se reconoce el strem asi que se ignora  
     
@@ -90,11 +98,11 @@ def read_order(file):
 def save_order(message):
     dict_to_save= {'symbol':message['o']['s'],'time':message['T'],
                    'client_id':message['o']['c'],'side':message['o']['S'],
-                   'quantity':message['o']['q'],'sl':var.stop_lose,
-                   'tp':var.take_profit}
+                   'quantity':message['o']['q'],'sl':var.sl_price,
+                   'tp':var.tp_price} 
     cliente_id = message['o']['c']
     fileDir = os.path.dirname(os.path.realpath('__file__'))
-    filename = os.path.join(fileDir, f'trades/{cliente_id}.txt')
+    filename = os.path.join(fileDir, f'trades\{cliente_id}.txt')
     save_stream_on_txt(filename,dict_to_save,False)
 
 def process_kline(message):
@@ -118,7 +126,9 @@ def new_candle(kline_dict):
     else:
         var.hist_candles = historical_data(var.symbol,var.interval,
                                            var.len_hist_candle)
-        
+        for i in range(len(var.hist_candles)):
+            print('>>>>>>>', var.hist_candles[i]['high_price'],'<<<<<<<<<')
+        print('_____________________________________________')   
 def load_symbols_info():
     lee = open('my_symbols_info.txt','r')
     json_lee= lee.read()
@@ -143,6 +153,7 @@ def make_my_symbol_info():
     dict_symbols={}
     for x in list_info_symbols:
         # tickSize minima unidad que puede subir o bajar el precio
+        tick = x['filters'][0]['tickSize']
         tick_size = x['filters'][0]['tickSize']
         tick_size= tick_size.find("1") - 1
         # minima unidad que se puede comprar
@@ -153,10 +164,17 @@ def make_my_symbol_info():
             min_qty=len(min_qty)-2
         # pricePrecision cantidad de decimales que tiene el precio
         temp_dict= {'pricePrecision':x['pricePrecision'],'tickSize':tick_size,
-                    'minQty':min_qty}
+                    'minQty':min_qty,'tick':tick}
         dict_symbols[x['symbol']]=temp_dict
     
-    stream = json.dumps(dict_symbols)
+    keys = dict_symbols.keys()
+    sorted_keys = sorted(keys)
+    sorted_dict_symbols = {}
+    for key in sorted_keys:
+      if key[-4:] == 'USDT':
+          sorted_dict_symbols[key] = dict_symbols[key]
+  
+    stream = json.dumps(sorted_dict_symbols)
     _file = open('my_symbols_info.txt','w')
     _file.write(stream)
     _file.close()

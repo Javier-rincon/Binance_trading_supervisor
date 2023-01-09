@@ -88,8 +88,9 @@ def cancel_order(symbol,OrderId):
     return response
 
 def future_account_balance(coin):
+    print('------------', coin)
     response = send_signed_request('GET', '/fapi/v2/balance')
-    #print('=======',response,'==========')
+    print('=======',response,'==========')
     for i in range(len(response)):
         if response[i]['asset']== coin:
             var.balance = round(float(response[i]['balance']), 2)
@@ -137,15 +138,25 @@ def new_order_now(symbol, side, tp_price, sl_price):
     return response
 
 def setup_tp_sl(symbol, side, quantity, client_id, take_profit, stop_lose ):
+
+    VarSLTP=float(var.symbols_info[var.symbol]["tick"])*10
+    if side == 'SELL':
+        side_close_p = 'BUY'
+        priceSL = round(float(stop_lose)+VarSLTP, var.symbols_info[var.symbol]["tickSize"])
+        priceTP = round(float(take_profit)-VarSLTP, var.symbols_info[var.symbol]["tickSize"])
+    else:
+        side_close_p = 'SELL'
+        priceSL = round(float(stop_lose)-VarSLTP, var.symbols_info[var.symbol]["tickSize"])
+        priceTP = round(float(take_profit)+VarSLTP, var.symbols_info[var.symbol]["tickSize"])
+
     '''==========================SL================================'''
-    side_close_p = 'BUY' if side == 'SELL' else 'SELL'
     params_sl = {
     "symbol": symbol,
-    "side": side_close_p,
+    "side": side_close_p, 
     "type": "STOP",
     "timeInForce": "GTC",
     "quantity": quantity,
-    "price": float(stop_lose)*1.01,
+    "price": priceSL,
     "stopPrice": stop_lose,
     "reduceOnly": "True",
     "priceProtect": "True",
@@ -153,7 +164,7 @@ def setup_tp_sl(symbol, side, quantity, client_id, take_profit, stop_lose ):
     "newClientOrderId":f'{client_id}-SL'}
     response={}
     response['sl_order']  = send_signed_request('POST', '/fapi/v1/order', params_sl)
-    
+    print('==========================SL', params_sl, '================================', response)
     '''==========================TP================================''' 
     params_tp = {
     "symbol": symbol,
@@ -161,7 +172,7 @@ def setup_tp_sl(symbol, side, quantity, client_id, take_profit, stop_lose ):
     "type": "TAKE_PROFIT",
     "timeInForce": "GTC",
     "quantity": quantity,
-    "price": float(take_profit)*1.01,
+    "price": priceTP,
     "stopPrice": take_profit,
     "reduceOnly": "True",
     "priceProtect": "True",
@@ -169,6 +180,8 @@ def setup_tp_sl(symbol, side, quantity, client_id, take_profit, stop_lose ):
     "newClientOrderId":f'{client_id}-TP'}
 
     response['tp_order']= send_signed_request('POST', '/fapi/v1/order', params_tp)
+    print('==========================tp', params_tp, '================================', response)
+
     #return response
        
 

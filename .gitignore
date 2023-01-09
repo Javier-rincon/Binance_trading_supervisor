@@ -1,4 +1,8 @@
 _privateconfig.py
 privateconfig.py
 fails_streams.txt
+ORDER_TRADE_UPDATE.txt
+fails_streams.txt
+trades
+respaldos
 __pycache__/
